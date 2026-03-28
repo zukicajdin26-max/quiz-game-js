@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ultimate Quiz Game</title>
+
+<style>
+body {
+    font-family: Arial;
+    background: linear-gradient(135deg, #141e30, #243b55);
+    color: white;
+    text-align: center;
+    padding: 30px;
+}
+
+#quiz-box {
+    background: #1f2a40;
+    padding: 25px;
+    border-radius: 12px;
+    width: 360px;
+    margin: auto;
+    box-shadow: 0 0 25px rgba(0,0,0,0.6);
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from {opacity:0; transform: scale(0.95);}
+    to {opacity:1; transform: scale(1);}
+}
+
+button {
+    display: block;
+    margin: 10px auto;
+    padding: 12px;
+    width: 100%;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background: #4caf50;
+    color: white;
+    font-size: 15px;
+    transition: 0.2s;
+}
+
+button:hover {
+    transform: scale(1.05);
+}
+
+.correct { background: #2ecc71 !important; }
+.wrong { background: #e74c3c !important; }
+
+#top-bar {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+#leaderboard {
+    margin-top: 15px;
+    font-size: 14px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Ultimate Quiz Game 🚀</h1>
+
+<div id="quiz-box">
+    <div id="top-bar">
+        <span id="score">Score: 0</span>
+        <span id="level">Level: 1</span>
+        <span id="timer">Time: 10</span>
+    </div>
+
+    <p id="question"></p>
+    <div id="answers"></div>
+    <p id="result"></p>
+
+    <div id="leaderboard"></div>
+</div>
+
+<script>
+// 🔊 SOUND
+const correctSound = new Audio("https://www.soundjay.com/buttons/sounds/button-3.mp3");
+const wrongSound = new Audio("https://www.soundjay.com/buttons/sounds/button-10.mp3");
+
+// QUESTIONS
+const questions = [
+    {question:"Capital of Italy?", answers:["Rome","Paris","Berlin"], correct:0},
+    {question:"5 x 3 = ?", answers:["15","10","20"], correct:0},
+    {question:"JS stands for?", answers:["JavaSource","JavaScript","JustScript"], correct:1},
+    {question:"Color of grass?", answers:["Blue","Green","Red"], correct:1},
+    {question:"Sun rises in?", answers:["West","East","North"], correct:1}
+];
+
+let currentIndex = 0;
+let score = 0;
+let level = 1;
+let timeLeft = 10;
+let timer;
+
+// RANDOM shuffle
+questions.sort(() => Math.random() - 0.5);
+
+function startTimer() {
+    timeLeft = 10 - level;
+    if (timeLeft < 3) timeLeft = 3;
+
+    document.getElementById("timer").innerText = "Time: " + timeLeft;
+
+    timer = setInterval(() => {
+        timeLeft--;
+        document.getElementById("timer").innerText = "Time: " + timeLeft;
+
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            nextQuestion();
+        }
+    }, 1000);
+}
+
+function showQuestion() {
+    clearInterval(timer);
+
+    let q = questions[currentIndex];
+    document.getElementById("question").innerText = q.question;
+    document.getElementById("result").innerText = "";
+
+    let answersDiv = document.getElementById("answers");
+    answersDiv.innerHTML = "";
+
+    q.answers.forEach((ans, i) => {
+        let btn = document.createElement("button");
+        btn.innerText = ans;
+        btn.onclick = () => checkAnswer(i);
+        answersDiv.appendChild(btn);
+    });
+
+    startTimer();
+}
+
+function checkAnswer(selected) {
+    clearInterval(timer);
+
+    let correct = questions[currentIndex].correct;
+    let buttons = document.querySelectorAll("#answers button");
+
+    buttons.forEach((btn, i) => {
+        if (i === correct) btn.classList.add("correct");
+        else btn.classList.add("wrong");
+        btn.disabled = true;
+    });
+
+    if (selected === correct) {
+        score++;
+        correctSound.play();
+        document.getElementById("result").innerText = "Correct!";
+    } else {
+        wrongSound.play();
+        document.getElementById("result").innerText = "Wrong!";
+    }
+
+    document.getElementById("score").innerText = "Score: " + score;
+
+    setTimeout(nextQuestion, 1000);
+}
+
+function nextQuestion() {
+    currentIndex++;
+    level++;
+
+    document.getElementById("level").innerText = "Level: " + level;
+
+    if (currentIndex < questions.length) {
+        showQuestion();
+    } else {
+        endGame();
+    }
+}
+
+function endGame() {
+    saveScore(score);
+    showLeaderboard();
+
+    document.getElementById("quiz-box").innerHTML += `
+        <h2>Game Over!</h2>
+        <button onclick="location.reload()">Play Again</button>
+    `;
+}
+
+// LOCAL LEADERBOARD
+function saveScore(newScore) {
+    let scores = JSON.parse(localStorage.getItem("scores")) || [];
+    scores.push(newScore);
+    scores.sort((a,b)=>b-a);
+    scores = scores.slice(0,5);
+    localStorage.setItem("scores", JSON.stringify(scores));
+}
+
+function showLeaderboard() {
+    let scores = JSON.parse(localStorage.getItem("scores")) || [];
+    let html = "<h3>Top Scores:</h3>";
+    scores.forEach(s => {
+        html += "<p>" + s + "</p>";
+    });
+    document.getElementById("leaderboard").innerHTML = html;
+}
+
+showLeaderboard();
+showQuestion();
+</script>
+
+</body>
+</html>
